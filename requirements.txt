@@ -1,0 +1,9 @@
+Flask==2.0.2
+tensorflow==2.5.0
+scikit-learn==0.24.2
+Pillow==8.2.0
+numpy
+requests==2.26.0
+gunicorn
+psutil==5.8.0
+Werkzeug==2.2.2

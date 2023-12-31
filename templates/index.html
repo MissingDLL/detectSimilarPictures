@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Image Clustering</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/themes/default/style.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/jstree.min.js"></script>
+
+
+    <script>
+        $(document).ready(function () {
+
+            // Verzögertes Laden von jstree
+            function loadJSTree() {
+                $('#jstree').jstree({
+                    'core': {
+                        'themes': {
+                            'name': 'default',
+                            'dots': true,
+                            'icons': true
+                        },
+                        'data': {
+                            'url': '/get_directory_structure', // Ändern Sie die URL entsprechend Ihrer Flask-Route
+                            'dataType': 'json'
+                        }
+                    }
+                });
+            }
+
+            $("#cluster_images_btn").click(function () {
+                var directory = $("#image_directory").val();
+                performAction("cluster", directory);
+            });
+
+            $("#index_images_btn").click(function () {
+                var directory = $("#image_directory").val();
+                performAction("index", directory);
+            });
+
+            function performAction(action, directory) {
+                $.ajax({
+                    url: '/' + action,
+                    type: 'POST',
+                    data: { 'image_directory': directory },
+                    beforeSend: function () {
+                        $("#progress").text("Processing..."); // Display initial message
+                    },
+                    success: function (data) {
+                        $("#progress").html(data); // Display progress status
+                    },
+                    error: function () {
+                        $("#progress").text("Error occurred.");
+                    }
+                });
+            }
+
+            // Zeigen Sie das Popup-Fenster an und laden Sie jstree, wenn auf "Select Directories" geklickt wird
+            $("#select_directories_btn").click(function () {
+                loadJSTree();
+                $("#popup").show(); // Zeigen Sie das Popup an
+            });
+
+            // Event-Handler für "Auswählen" -Knopf im Popup-Fenster
+            $("#confirm_selection_btn").click(function () {
+                var selectedNodes = $('#jstree').jstree('get_selected', true);
+                var selectedPathsArr = [];
+                for (var key in selectedNodes) {
+                    if (selectedNodes.hasOwnProperty(key)) {
+                        var selectedNode = selectedNodes[key];
+                        var selectedPath = '/' + $('#jstree').jstree(true).get_path(selectedNode, '/');
+                        selectedPathsArr.push(selectedPath);
+                    }
+                }
+                console.log(selectedPathsArr)
+                
+                
+                $("#image_directory").val(selectedPathsArr.join(', '));
+                $("#popup").hide(); // Popup ausblenden
+
+                // jstreeInitialized = false; // Setzen Sie die Initialisierungsvariable zurück
+                // if (selectedNode) {
+                //     // Hier erhalten Sie den tatsächlichen Dateipfad statt der ID des ausgewählten Elements
+                //     var selectedPath = $('#jstree').jstree(true).get_path(selectedNode, '/');
+
+                //     $("#image_directory").val(selectedPath);
+
+                //     // Schließen Sie das Bootstrap-Modal
+                //     $('#directorySelectionModal').modal('hide');
+
+                //     jstreeInitialized = false; // Setzen Sie die Initialisierungsvariable zurück
+                // }
+            });
+
+        });
+
+    </script>
+</head>
+
+<body>
+    <h1>Image Clustering</h1>
+    <form>
+        <label for="image_directory">Image Directories:</label>
+        <input type="text" name="image_directory" id="image_directory" style="width: 300px;" readonly>
+        <button type="button" id="select_directories_btn">Select Directories</button>
+
+        <button type="button" id="index_images_btn">Index Images</button>
+        <button type="button" id="cluster_images_btn">Cluster Images</button>
+        
+        <!-- Popup-Fenster -->
+        <div id="popup" style="display: none;">
+            <!-- Hier können Sie den Inhalt Ihres Popup-Fensters erstellen -->
+            <button type="button" id="confirm_selection_btn">Confirm Selection</button>
+            <!-- jstree wird hier dynamisch geladen -->
+            <div id="jstree"></div>
+        </div>
+
+    </form>
+    <div id="progress"></div> <!-- Progress status will be displayed here -->
+</body>
+
+</html>
