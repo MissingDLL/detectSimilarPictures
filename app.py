@@ -40,33 +40,49 @@ def load_features_and_identifiers(feature_path):
 
 # Funktion zum Berechnen der Features eines Bilds (Beispiel)
 def calculate_features(image_path):
-    image_path_new=[]
+    image_path_new = []
     for file in image_path:
         if os.path.exists(file):
             image_path_new.append(file)
-    images = [tf.keras.preprocessing.image.load_img(file,target_size=(100, 100)) for file in image_path_new]
-    #image = tf.keras.preprocessing.image.load_img(image_path, target_size=(100, 100))
+
+    # Check if there are valid image files
+    if not image_path_new:
+        logger.error("No valid image files found.")
+        return None
+
+    images = [tf.keras.preprocessing.image.load_img(file, target_size=(100, 100)) for file in image_path_new]
+
+    # Check if there are valid images after loading
+    if not images:
+        logger.error("No valid images loaded.")
+        return None
+
     images = [tf.keras.preprocessing.image.img_to_array(img) for img in images]
-    #image_array = tf.keras.preprocessing.image.img_to_array(image)
-    #image_array = tf.keras.applications.vgg16.preprocess_input(np.expand_dims(image_array, axis=0))
     images = tf.keras.applications.vgg16.preprocess_input(np.array(images))
-    
+
     features = base_model.predict(images)
     return features
 
-# Funktion zum Speichern der Features und Hash-Werte
-def save_features_and_identifiers(features, image_hashes, file_path):
-    # Wandeln Sie die ndarray-Objekte in Listen um
-    features_list = [feature.tolist() for feature in features]
-    if len(features_list) != len(image_hashes):
-        logger.error("len(features_list) != len(image_hashes)")
-        raise Exception("len(features_list) != len(image_hashes)")
-    # Erstellen Sie ein JSON-fähiges Datenobjekt
-    data = {'image_hashes': image_hashes, 'features': features_list}
 
-    # Öffnen Sie die Datei im Schreibmodus und speichern Sie die Daten als JSON
-    with open(file_path, 'w') as file:
-        json.dump(data, file)
+# Funktion zum Speichern der Features und Hash-Werte
+def save_features_and_identifiers(features, identifiers, filename):
+    # Add your original check
+    if features is not None:
+        # Convert features to a list
+        features_list = [feature.tolist() for feature in features]
+
+        # Check if the lengths match
+        if len(features_list) != len(identifiers):
+            logger.error("len(features_list) != len(identifiers)")
+            raise Exception("len(features_list) != len(identifiers)")
+
+        # Combine features and identifiers into a dictionary
+        data = {'features': features_list, 'identifiers': identifiers}
+
+        # Save the data to a JSON file
+        with open(filename, 'w') as file:
+            json.dump(data, file)
+
 
 # Funktion zum Ermitteln der neuen Bildpfade
 def get_new_image_paths(image_paths, saved_image_hashes):
@@ -139,7 +155,7 @@ def cluster_images_new_bak(image_path, features):
     # except Exception as e:
     #     logger.error(f"Error during clustering for directory {image_path_new}: {e}")
     #logger.info(f"Finished clustering for directory: {image_path}")
-    print(cluster_list)
+    logger.debug(cluster_list)
     cluster_count = len(cluster_list)
     return cluster_list, cluster_count
 
@@ -171,8 +187,6 @@ def calculate_cluster_accuracy(cluster, similarity_matrix):
 
     return accuracy_values
 
-
-
 def cluster_images_new(image_path, features):
     #logger.info(f"Clustering images in directory: {image_path}")
     cluster_list = []
@@ -181,59 +195,51 @@ def cluster_images_new(image_path, features):
         if os.path.exists(file):
             image_path_new.append(file)
 
-    #try:
-    # Finde die Indizes der Features, die den Bildern in image_path entsprechen
-    feature_indices = [i for i, path in enumerate(image_path) if path in image_path]
+    try:
+        # Finde die Indizes der Features, die den Bildern in image_path entsprechen
+        feature_indices = [i for i, path in enumerate(image_path) if path in image_path]
 
-    # Wählen Sie nur die relevanten Features basierend auf den gefundenen Indizes aus
-    relevant_features = [features[i] for i in feature_indices]
+        # Wählen Sie nur die relevanten Features basierend auf den gefundenen Indizes aus
+        relevant_features = [features[i] for i in feature_indices]
 
-    # Berechnen Sie die Ähnlichkeitsmatrix nur für die relevanten Features
-    similarity_matrix = cosine_similarity(relevant_features)
-    #print(similarity_matrix)
-    threshold = 0.9
-    num_images = len(image_path_new)
-    percentage_similarity_matrix = (similarity_matrix + 1) / 2 * 100
+        # Check if there are relevant features to proceed
+        if not relevant_features:
+            logger.error("No relevant features found. Check input data.")
+            return cluster_list, 0
 
+        # Berechnen Sie die Ähnlichkeitsmatrix nur für die relevanten Features
+        similarity_matrix = cosine_similarity(relevant_features)
+        #print(similarity_matrix)
+        threshold = 0.9
+        num_images = len(image_path_new)
+        percentage_similarity_matrix = (similarity_matrix + 1) / 2 * 100
 
-    processed_images = set()
+        processed_images = set()
 
-    for i in range(num_images):
-        if image_path_new[i] not in processed_images:
-            similar_group = []
-            similar_group_accuracy = []
+        for i in range(num_images):
+            if image_path_new[i] not in processed_images:
+                similar_group = []
+                similar_group_accuracy = []
 
-            for j in range(i, num_images):
-                if similarity_matrix[i, j] > threshold:
-                    similar_group.append(os.path.relpath(image_path_new[j], start=app.static_folder))
-                    similar_group_accuracy.append(similarity_matrix[i, j])
-                    processed_images.add(image_path_new[j])
+                for j in range(i, num_images):
+                    if similarity_matrix[i, j] > threshold:
+                        similar_group.append(os.path.relpath(image_path_new[j], start=app.static_folder))
+                        similar_group_accuracy.append(similarity_matrix[i, j])
+                        processed_images.add(image_path_new[j])
 
-            if len(similar_group) > 1:
-                cluster = Cluster(os.path.relpath(image_path_new[i], start=app.static_folder), similar_group, similar_group_accuracy)
-                accuracy_values = calculate_cluster_accuracy(cluster, similarity_matrix)
-                cluster.accuracy_values = accuracy_values
-                cluster_list.append(cluster)
+                if len(similar_group) > 1:
+                    cluster = Cluster(os.path.relpath(image_path_new[i], start=app.static_folder), similar_group, similar_group_accuracy)
+                    accuracy_values = calculate_cluster_accuracy(cluster, similarity_matrix)
+                    cluster.accuracy_values = accuracy_values
+                    cluster_list.append(cluster)
+
+    except Exception as e:
+        # Print the problematic image path
+        logger.error(f"Error during clustering for directory {image_path_new}: {e}")
+    
+    #logger.info(f"Finished clustering for directory: {image_path}")
     cluster_count = len(cluster_list)
     return cluster_list, cluster_count
-
-    # for i in range(len(image_path_new)):
-    #     similar_group = []
-    #     similar_group_accuracy = []
-    #     for j in range(len(image_path_new)):
-    #         if image_path_new[i] != image_path_new[j]:
-    #             if similarity_matrix[i, j] > threshold:
-    #                 similar_group.append(os.path.relpath(image_path_new[j], start=app.static_folder))
-    #                 similar_group_accuracy.append(percentage_similarity_matrix[i][j])
-    #     if len(similar_group) > 0:
-    #         cluster = Cluster(os.path.relpath(image_path_new[i], start=app.static_folder), similar_group, similar_group_accuracy)
-    #         cluster_list.append(cluster)
-    # # except Exception as e:
-    # #     logger.error(f"Error during clustering for directory {image_path_new}: {e}")
-    # #logger.info(f"Finished clustering for directory: {image_path}")
-    # print(cluster_list)
-    # cluster_count = len(cluster_list)
-    # return cluster_list, cluster_count
 
 def create_thumbnail_dir():
     logger.debug("Creating thumbnail directory.")
@@ -356,11 +362,11 @@ def index_images():
 
     # Teilen Sie den String anhand des Kommas auf, um eine Liste von Verzeichnispfaden zu erhalten
     image_directories_list = [directory.strip().replace('\\', '/') for directory in image_directories_array.split(',')]
-    print(image_directories_list)
+    logger.debug(image_directories_list)
 
     image_directories = []
     for directory in image_directories_list:
-        print(directory)
+        logger.debug(directory)
         image_directory = directory.replace('\\', '/')
         image_directories.extend(get_directories_with_images(image_directory))
 
@@ -375,11 +381,11 @@ def cluster():
 
     # Teilen Sie den String anhand des Kommas auf, um eine Liste von Verzeichnispfaden zu erhalten
     image_directories_list = [directory.strip().replace('\\', '/') for directory in image_directories_array.split(',')]
-    print(image_directories_list)
+    logger.debug(image_directories_list)
 
     image_directories = []
     for directory in image_directories_list:
-        print(directory)
+        logger.debug(directory)
         image_directory = directory.replace('\\', '/')
         image_directories.extend(get_directories_with_images(image_directory))
 
@@ -420,4 +426,4 @@ def cluster():
     return render_template('cluster.html', clusters=cluster_list, cluster_count=cluster_count)  # Änderung hier
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000)
+    app.run(debug=False, host='0.0.0.0', port=5000)

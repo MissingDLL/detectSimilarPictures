@@ -1,242 +1,313 @@
 <!DOCTYPE html>
 <html>
-
-<head>
-    <title>Clustered Images</title>
-    <style>
-body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-    background-color: #f2f2f2;
-}
-
-header {
-    background-color: #333;
-    color: white;
-    padding: 10px 0;
-    text-align: center;
-}
-
-.container {
-    max-width: 95%;
-    margin: 0 auto;
-    padding: 20px;
-}
-
-.cluster {
-    margin: 20px 0;
-    padding: 20px;
-    background-color: white;
-    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-    border-radius: 10px;
-    transition: transform 0.3s ease-in-out;
-}
-
-.cluster:hover {
-    transform: scale(1.02);
-}
-
-.cluster-header {
-    display: flex;
-    align-items: center;
-}
-
-.main-pic {
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    margin-right: 20px;
-    object-fit: cover;
-}
-
-h2 {
-    font-size: 24px;
-    margin: 0;
-}
-
-.pictures {
-    margin-top: 20px;
-    display: flex;
-    flex-wrap: wrap;
-}
-
-.picture-div {
-    flex-grow: 1;
-    padding: 10px;
-    margin-right: 10px;
-    border-radius: 5px;
-    overflow: hidden;
-    position: relative;
-    transition: transform 0.3s ease-in-out;
-}
-
-.picture-div:hover {
-    transform: scale(1.1);
-}
-
-.checkbox-container {
-    position: relative;
-    display: inline-block;
-}
-
-.checkbox {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-}
-
-.thumbnail {
-    max-width: 100%;
-    height: auto;
-    display: block;
-}
-
-.image-details {
-    text-align: center;
-}
-
-.accuracy {
-    font-weight: bold;
-    color: #6b636e;
-}
-
-.delete-button {
-    margin-top: 20px;
-    background-color: #ff5722;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s ease-in-out;
-}
-
-.delete-button:hover {
-    background-color: #e64a19;
-}
-.picture-div.selected {
-    border: 2px solid #ff5722; /* Ändern Sie die Farbe nach Bedarf */
-}
-    </style>
-    <script>
-        $(document).ready(function () {
-            const deleteButtons = document.querySelectorAll(".delete-button");
-            const deletedImages = [];
-            deleteButtons.forEach((button) => {
-                button.addEventListener("click", function () {
-                    const checkboxes = this.parentNode.querySelectorAll(".checkbox");
-                    const imagesToRemove = [];
-
-                    checkboxes.forEach((checkbox, index) => {
-                        if (checkbox.checked) {
-                            imagesToRemove.push(index);
-                            deletedImages.push(checkbox.parentNode.querySelector("img").src);
-                        }
-                    });
-
-                    imagesToRemove.reverse(); // Rückwärts durchlaufen, um richtig zu löschen
-                    console.log(imagesToRemove)
-                    imagesToRemove.forEach((index) => {
-                        const pictureDiv = checkboxes[index].closest(".picture-div");
-                        pictureDiv.remove();
-                        console.log(pictureDiv)
-                    });
-
-                    const cluster = this.parentNode;
-                    const remainingPictureDivs = cluster.querySelectorAll(".picture-div");
-                    if (remainingPictureDivs.length === 0) {
-                        cluster.remove();
-                    }
-                    // Check if deleted images are present in other clusters and remove them
-                    const otherClusters = document.querySelectorAll(".cluster");
-                    otherClusters.forEach((otherCluster) => {
-                        if (otherCluster !== cluster) {
-                            const otherImages = otherCluster.querySelectorAll("img");
-                            otherImages.forEach((img) => {
-                                if (deletedImages.includes(img.src)) {
-                                    const parentDiv = img.closest(".picture-div");
-                                    if (parentDiv) {
-                                        parentDiv.remove();
-                                        const remainingDivs = otherCluster.querySelectorAll(".picture-div");
-                                        if (remainingDivs.length === 0) {
-                                            otherCluster.remove();
-                                        }
-                                    }
-                                }
-                            });
-                        }
-                    });
-
-
-                });
-            });
-
-
-
-            const selectedImages = [];
-
-    function toggleSelection(imageUrl) {
-        const index = selectedImages.indexOf(imageUrl);
-        if (index === -1) {
-            // Das Bild wurde ausgewählt, hinzufügen
-            selectedImages.push(imageUrl);
-        } else {
-            // Das Bild wurde abgewählt, entfernen
-            selectedImages.splice(index, 1);
+    <head>
+        <title>Clustered Images</title>
+        <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f2f2f2;
         }
 
-        // Aktualisieren Sie die visuelle Darstellung der ausgewählten Bilder
-        updateSelectedImages();
-    }
+        header {
+            background-color: #333;
+            color: white;
+            padding: 10px 0;
+            text-align: center;
+        }
 
-    function updateSelectedImages() {
-        const imageDivs = document.querySelectorAll(".picture-div img");
-        imageDivs.forEach((img) => {
-            const imageUrl = img.getAttribute("src");
-            if (selectedImages.includes(imageUrl)) {
-                // Das Bild ist ausgewählt, fügen Sie eine Farbumrandung hinzu
-                img.classList.add("selected");
+        .container {
+            max-width: 95%;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .cluster {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: white;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .cluster:hover {
+            transform: scale(1.02);
+        }
+
+        .cluster-header {
+            display: flex;
+            align-items: center;
+        }
+
+        .main-pic {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            margin-right: 20px;
+            object-fit: cover;
+        }
+
+        h2 {
+            font-size: 24px;
+            margin: 0;
+        }
+
+        .pictures {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        .picture-div {
+            flex-grow: 1;
+            padding: 10px;
+            margin-right: 10px;
+            border-radius: 5px;
+            overflow: hidden;
+            position: relative;
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .picture-div:hover {
+            transform: scale(1.1);
+        }
+
+        .checkbox-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        .checkbox {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+        }
+
+        .thumbnail {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .image-details {
+            text-align: left; /* Add this line to keep the text aligned to the left */
+        }
+
+        .accuracy {
+            font-weight: bold;
+            color: #6b636e;
+        }
+
+        .delete-button {
+            margin-top: 20px;
+            background-color: #ff5722;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease-in-out;
+        }
+
+        .delete-button:hover {
+            background-color: #e64a19;
+        }
+
+        .thumbnail.selected {
+            border: 2px solid #ff5722; /* Add your desired border style for the selected state */
+            box-shadow: 0 0 5px 2px #ff5722; /* Add your desired box shadow for the selected state */
+        }
+
+        #backToTopBtn {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #007bff;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+    </style>
+        <script>
+        const selectedImages = [];
+        const deletedImages = [];
+
+        function toggleSelection(imageUrl) {
+            console.log("toggleSelected was called")
+            const index = selectedImages.indexOf(imageUrl);
+            if (index === -1) {
+                // Das Bild wurde ausgewählt, hinzufügen
+                selectedImages.push(imageUrl);
             } else {
-                // Das Bild ist nicht ausgewählt, entfernen Sie die Farbumrandung
-                img.classList.remove("selected");
+                // Das Bild wurde abgewählt, entfernen
+                selectedImages.splice(index, 1);
             }
-        });
-    }
-        });
+
+            // Aktualisieren Sie die visuelle Darstellung der ausgewählten Bilder
+            updateSelectedImages();
+        }
+
+        function updateSelectedImages() {
+            updateSelectedImagesVisuals()
+            console.log("updateSelectedImages was called")
+            const imageDivs = document.querySelectorAll(".picture-div img");
+            imageDivs.forEach((img) => {
+                const imageUrl = img.getAttribute("alt");
+                if (selectedImages.includes(imageUrl)) {
+                    // Das Bild ist ausgewählt, fügen Sie eine Farbumrandung hinzu
+                    img.classList.add("selected");
+                } else {
+                    // Das Bild ist nicht ausgewählt, entfernen Sie die Farbumrandung
+                    img.classList.remove("selected");
+                }
+            });
+        }
+        function updateSelectedImagesVisuals() {
+            const selectedCountSpan = document.getElementById("selected-count");
+            selectedCountSpan.textContent = selectedImages.length;
+        }
+
+        function deleteSelectedGlobal() {
+            const selectedImageCount = selectedImages.length;
+            if (selectedImageCount > 0) {
+                const confirmation = confirm(`Are you sure you want to delete ${selectedImageCount} selected images across all clusters?`);
+                if (confirmation) {
+                    selectedImages.forEach((imageUrl) => {
+                        const imageDiv = document.querySelector(`.picture-div img[alt="${imageUrl}"]`).closest('.picture-div');
+                        if (imageDiv) {
+                            deletedImages.push(imageDiv.getAttribute("alt"));
+                            imageDiv.remove();
+                        }
+                    });
+                    // Remove deleted images from selectedImages array
+                    selectedImages.length = 0;
+                    removeClustersAndDuplicateImages();
+                    updateSelectedImagesVisuals(); // Update the count and visual representation
+                }
+            } else {
+                alert("No images selected for deletion.");
+            }
+        }
+        function removeClustersAndDuplicateImages(){
+
+            // Check if deleted images are present in other clusters and remove them
+            const allClusters = document.querySelectorAll(".cluster");
+            allClusters.forEach((cluster) => {
+                const remainingPictureDivs = cluster.querySelectorAll(".picture-div");
+                if (remainingPictureDivs.length === 0) {
+                    cluster.remove();
+                }
+                    const allImages = cluster.querySelectorAll("img");
+                    allImages.forEach((img) => {
+                        if (deletedImages.includes(img.src)) {
+                            const parentDiv = img.closest(".picture-div");
+                            if (parentDiv) {
+                                parentDiv.remove();
+                                const remainingDivs = cluster.querySelectorAll(".picture-div");
+                                if (remainingDivs.length === 0) {
+                                    cluster.remove();
+                                }
+                            }
+                        }
+                    });
+                
+            });
+        }
+
+        function deleteSelected(node){
+            const pictureDivs = node.parentNode.querySelectorAll(".picture-div");
+
+            pictureDivs.forEach((pictureDiv) => {
+                const imageUrl = pictureDiv.querySelector("img").getAttribute("alt");
+                if (selectedImages.includes(imageUrl)) {
+                    deletedImages.push(imageUrl);
+                    pictureDiv.remove();
+                    // Find the index of the image in the array
+                    const index = selectedImages.indexOf(imageUrl);
+
+                    // Remove the image from the array
+                    if (index !== -1) {
+                        selectedImages.splice(index, 1);
+                    }
+                }
+            });
+
+            removeClustersAndDuplicateImages()
+            updateSelectedImagesVisuals(); // Update the count and visual representation
+        }
+
+       // Function to scroll to the top of the page
+        function scrollToTop() {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Function to toggle the visibility of the "back to top" button
+        function toggleBackToTopButton() {
+        var button = document.getElementById('backToTopBtn');
+        if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+            button.style.display = 'block';
+        } else {
+            button.style.display = 'none';
+        }
+        }
+
+        // Attach the toggleBackToTopButton function to the scroll event
+        window.onscroll = function() {
+        toggleBackToTopButton();
+        };
 
     </script>
-</head>
+    </head>
 
-<body>
-    <header>
-        <h1>Clustered Images</h1>
-        <p>Number of Clusters: {{ cluster_count }}</p>
-    </header>
-    <div class="container">
-        {% for cluster in clusters %}
-        <div class="cluster">
-            <div class="cluster-header">
-                <img class="main-pic" src="/static/{{ cluster.clusterName }}" alt="{{ cluster.clusterName }}">
-                <h2>{{ cluster.clusterName }}</h2>
-            </div>
-
-            <div class="pictures">
-                {% for image in cluster.images %}
-                <div class="picture-div {% if image in selected_images %}selected{% endif %}">
-                    <img src="/static/{{ image }}" alt="{{ image }}" class="thumbnail" onclick="toggleSelection('{{ image }}')" data-image="{{ image }}">
-
-                    <div class="image-details">
-                        <p>{{ image }}</p>
-                        <p class="accuracy">Accuracy: {{ cluster.accuracy[loop.index-1] }}</p>
-                    </div>
+    <body>
+        <header>
+            <h1>Clustered Images</h1>
+            <p>Number of Clusters: {{ cluster_count }} | Number of Selected
+                Images: <span id="selected-count">0</span></p>
+            <button onclick="deleteSelectedGlobal()" class="delete-button">Delete
+                Selected (Global)</button>
+        </header>
+        <div class="container">
+            {% for cluster in clusters %}
+            <div class="cluster">
+                <div class="cluster-header">
+                    <img class="main-pic"
+                        src="/static/{{ cluster.clusterName }}"
+                        alt="{{ cluster.clusterName }}">
+                    <h2>{{ cluster.clusterName }}</h2>
                 </div>
-                {% endfor %}
+
+                <div class="pictures">
+                    {% for image in cluster.images %}
+                    <div
+                        class="picture-div {% if image in selected_images %}selected{% endif %}">
+                        <img src="/static/{{ image }}" alt="{{ image }}"
+                            class="thumbnail"
+                            onclick="toggleSelection('{{ image }}')"
+                            data-image="{{ image }}">
+
+                        <div class="image-details">
+                            <p>{{ image }}</p>
+                            <p class="accuracy">Accuracy: {{
+                                cluster.accuracy[loop.index-1] }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <button class="delete-button" onclick="deleteSelected(this)">Delete
+                    Selected</button>
             </div>
-            <button class="delete-button">Delete Selected</button>
+            {% endfor %}
         </div>
-        {% endfor %}
-    </div>
-</body>
+        <!-- Back to Top Button -->
+        <button id="backToTopBtn" onclick="scrollToTop()">Back to Top</button>
+
+    </body>
 
 </html>
